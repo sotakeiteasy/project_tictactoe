@@ -34,7 +34,6 @@ function App(firstName, secondName) {
 
         function checkBoard(boardObj, player) {
             const board = boardObj.getBoard()
-            console.log(board)
 
             // check rows
             if (board.some(row => (row.every(cell => cell === 'X') || row.every(cell => cell === 'O')))) {
@@ -92,12 +91,13 @@ function App(firstName, secondName) {
             const currentPlayer = getCurrentPlayer();
             board.setBoard(currentPlayer, isFirstPlayer, coordinateX, coordinateY);
             board.checkBoard(board, currentPlayer);
-                        
             isFirstPlayer = !isFirstPlayer
+            
+            if (isRoundOver) return
             displayGame(board, null, firstPlayer, secondPlayer, isFirstPlayer, isRoundOver)
         }
 
-        const endRound = (winner = 'draw') => {
+        const endRound = (winner) => {
             isRoundOver = true; 
             winner != 'draw' ? winner.addScore() : winner
             displayGame(board, winner, firstPlayer, secondPlayer, isFirstPlayer, isRoundOver);
@@ -108,22 +108,24 @@ function App(firstName, secondName) {
             isRoundOver = false
             isFirstPlayer = true
             displayGame(board, null, firstPlayer, secondPlayer, isFirstPlayer, isRoundOver)
+
         }
 
         return { step, endRound, startRound }
     }
    
     function displayGame(board, winner, firstPlayer, secondPlayer, isFirstPlayer, isRoundOver) {
+
         const boardData = board.getBoard()
         let currentIndex = 0;
-
-        const cells = document.querySelectorAll(".cell")
 
         const container = createContainer();
         const gameField = createGameField(boardData);
         const results = createResultsBlock()
         const button = createNewRoundButton()
         container.append(gameField, results, button);
+
+        const cells = document.querySelectorAll(".cell")
 
         function createContainer() {
             const container = document.querySelector(".game-container")
@@ -184,7 +186,7 @@ function App(firstName, secondName) {
         } if (isRoundOver) {
             cells.forEach(cell => cell.removeEventListener('click', () => handleClick(cell)))
             if (winner != "draw") {
-                let text = `${winner.name} win. Score: ${`${firstPlayer.getScore()} : ${secondPlayer.getScore()}`}`
+                let text = `${winner.name} wins. Score: ${`${firstPlayer.getScore()} : ${secondPlayer.getScore()}`}`
                 showNextLetter(results, text)
             } else {
                 let text = `It's a draw.`
