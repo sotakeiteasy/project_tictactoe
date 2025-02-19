@@ -20,10 +20,10 @@ function App(firstName, secondName) {
             [false, false, false]
         ]
 
-        function setBoard(player, coordinateX, coordinateY) {
-            if (player === firstPlayer && board [coordinateY][coordinateX] === false) {
+        function setBoard(player, isFirstPlayer, coordinateX, coordinateY) {
+            if (isFirstPlayer && board [coordinateY][coordinateX] === false) {
                 board[coordinateY][coordinateX] = 'X'
-            } else if (player === secondPlayer && board [coordinateY][coordinateX] === false) {
+            } else if (!isFirstPlayer && board [coordinateY][coordinateX] === false) {
                 board[coordinateY][coordinateX] = 'O'
             }
         }
@@ -76,137 +76,120 @@ function App(firstName, secondName) {
         return { setBoard, getBoard, clearBoard, checkBoard }
     }
 
-    function Game() {
+    function Game(firstPlayerName, secondPlayerName) {
         let isRoundOver = false
         let isFirstPlayer = true
 
+        const firstPlayer = Player(firstPlayerName);
+        const secondPlayer = Player(secondPlayerName);
+        const getCurrentPlayer = () => (isFirstPlayer ? firstPlayer : secondPlayer);
+
         const board = Board()
     
-        const step = (player, coordinateX, coordinateY) => {
+        const step = (coordinateX, coordinateY) => {
             if (isRoundOver) return
-            if (isFirstPlayer) {
-                board.setBoard(firstPlayer, coordinateX, coordinateY)
-                board.checkBoard(board, firstPlayer)
-            } else {
-                board.setBoard(secondPlayer, coordinateX, coordinateY)
-                board.checkBoard(board, secondPlayer)
-            } 
 
-            if (isRoundOver) return;
-            
+            const currentPlayer = getCurrentPlayer();
+            board.setBoard(currentPlayer, isFirstPlayer, coordinateX, coordinateY);
+            board.checkBoard(board, currentPlayer);
+                        
             isFirstPlayer = !isFirstPlayer
-            displayGame(board, player, isFirstPlayer, isRoundOver)
+            displayGame(board, null, firstPlayer, secondPlayer, isFirstPlayer, isRoundOver)
         }
 
-        const endRound = (player = 'draw') => {
-            if (player === 'draw') {
-                console.log(`It is ${player}!`)
-                isRoundOver = true
-                displayGame(board, player, isFirstPlayer, isRoundOver)
-            } else {
-                 console.log(`${player.name} win! Score: ${`${firstPlayer.getScore()} : ${secondPlayer.getScore()}`}`)
-                player.addScore()
-                isRoundOver = true
-                displayGame(board, player, isFirstPlayer, isRoundOver)
-            }           
+        const endRound = (winner = 'draw') => {
+            isRoundOver = true; 
+            winner != 'draw' ? winner.addScore() : winner
+            displayGame(board, winner, firstPlayer, secondPlayer, isFirstPlayer, isRoundOver);
         }
 
-        const startRound = (player) => {           
+        const startRound = () => {           
             board.clearBoard()
             isRoundOver = false
             isFirstPlayer = true
-            displayGame(board, player, isFirstPlayer, isRoundOver)
+            displayGame(board, null, firstPlayer, secondPlayer, isFirstPlayer, isRoundOver)
         }
 
         return { step, endRound, startRound }
     }
+   
+    function displayGame(board, winner, firstPlayer, secondPlayer, isFirstPlayer, isRoundOver) {
+        const boardData = board.getBoard()
+        let currentIndex = 0;
 
+        const cells = document.querySelectorAll(".cell")
 
-
-
-    function createGameField(boardData) {
-        const gameField = document.createElement('div');
-        gameField.className = 'gameField';
-
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                const cell = document.createElement("div");
-                cell.classList = `cell ${j}${i}`;
-                cell.textContent = boardData[i][j] ? boardData[i][j] : '';
-                gameField.appendChild(cell);
-            }
-        }
-        return gameField;
-    }
-
-    function createResultsBlock() {
-        const results = document.createElement('div');
-        results.className = 'result';
-        results.textContent = '...';
-        return results;
-    }
-
-    function createNewRoundButton() {
-        const button = document.createElement('button')
-        button.textContent = 'New round'
-        button.addEventListener('click', () => {
-            Round.startRound(firstPlayer)
-        })
-        return button
-    }
-
-    function displayGame(board, player, isFirstPlayer, isRoundOver) {
-        boardData = board.getBoard()
-        const container = document.querySelector(".game-container")
-        container.textContent = ''
-
+        const container = createContainer();
         const gameField = createGameField(boardData);
         const results = createResultsBlock()
         const button = createNewRoundButton()
-
         container.append(gameField, results, button);
 
+        function createContainer() {
+            const container = document.querySelector(".game-container")
+            container.textContent = ''
+            return container
+        }
 
-        let currentIndex = 0;
+        function createGameField(boardData) {
+            const gameField = document.createElement('div');
+            gameField.className = 'gameField';
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    const cell = document.createElement("div");
+                    cell.classList = `cell ${j}${i}`;
+                    cell.textContent = boardData[i][j] ? boardData[i][j] : '';
+                    gameField.appendChild(cell);
+                }
+            }
+            return gameField;
+        }
+
+        function createResultsBlock() {
+            const results = document.createElement('div');
+            results.className = 'result';
+            results.textContent = '...';
+            return results;
+        }
+
+        function createNewRoundButton() {
+            const button = document.createElement('button')
+            button.textContent = 'New round'
+            button.addEventListener('click', () => {
+                Round.startRound()
+            })
+            return button
+        }
 
         function updateCell(cell, value) {
             cell.textContent = value;
         }
-
-
-
-        const cells = document.querySelectorAll(".cell")
 
         function handleClick(cell) {
             let row = cell.className[5]
             let col = cell.className[6]
 
             if (isFirstPlayer && !boardData[col][row]) {
-                Round.step(player, row, col)
+                Round.step(row, col)
                 updateCell(cell, "X")
             } else if (!isFirstPlayer && !boardData[col][row]) {                
-                Round.step(player, row, col)
+                Round.step(row, col)
                 updateCell(cell, "O")
             }
         }
 
-        
-        
         if (isRoundOver === false) {
             cells.forEach(cell => cell.addEventListener('click', () => handleClick(cell)))
-        } else if (isRoundOver) {
+        } if (isRoundOver) {
             cells.forEach(cell => cell.removeEventListener('click', () => handleClick(cell)))
-            if (player != "draw") {
-                let text = `${player.name} win. Score: ${`${firstPlayer.getScore()} : ${secondPlayer.getScore()}`}`
+            if (winner != "draw") {
+                let text = `${winner.name} win. Score: ${`${firstPlayer.getScore()} : ${secondPlayer.getScore()}`}`
                 showNextLetter(results, text)
             } else {
                 let text = `It's a draw.`
                 showNextLetter(results, text)
             }
-        }
-
-        function showResult(result) {
-            
         }
 
         function showNextLetter(resultDiv, text) {
@@ -218,11 +201,8 @@ function App(firstName, secondName) {
         }
     } 
 
-    firstPlayer = Player(firstName)
-    secondPlayer = Player(secondName)
-
-    const Round = Game()
-    Round.startRound(firstPlayer)    
+    const Round = Game(firstName, secondName)
+    Round.startRound()    
 }
 
 function getNames(callback) {
